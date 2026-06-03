@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Light theme ─────────────────────────────────────────────────────────── */
+:root,
+[data-theme="light"] {
+  --bg:           #ECEBEC;
+  --surface:      #FFFFFF;
+  --surface2:     #F5F4F5;
+  --inset:        #EFEEEF;
+  --line:         #DEDCDF;
+  --line2:        #E9E8EA;
+  --ink:          #2A2230;
+  --ink2:         #564256;
+  --muted:        #8C8893;
+  --faint:        #B6B2BB;
+  --accent:       #FC814A;
+  --accent-soft:  rgba(252,129,74,0.12);
+  --accent-line:  rgba(252,129,74,0.45);
+  --on-accent:    #FFFFFF;
+  --success:      #3FBF7F;
+  --voicemail:    #6C8FE0;
+  --negative:     #D9685A;
+}
+
+/* ── Dark theme ──────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:           #211B27;
+  --surface:      #2D2635;
+  --surface2:     #372F40;
+  --inset:        #241E2B;
+  --line:         rgba(255,255,255,0.10);
+  --line2:        rgba(255,255,255,0.06);
+  --ink:          #F1EFF1;
+  --ink2:         #CFC9D2;
+  --muted:        #96939B;
+  --faint:        #6E6878;
+  --accent:       #FC814A;
+  --accent-soft:  rgba(252,129,74,0.18);
+  --accent-line:  rgba(252,129,74,0.42);
+  --on-accent:    #FFFFFF;
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
+@keyframes bookrEq {
+  0%, 100% { transform: scaleY(0.32); }
+  50%       { transform: scaleY(1); }
+}
+
+@keyframes bookrPing {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes bookrPulse {
+  0%   { box-shadow: 0 0 0 0 var(--accent-soft); }
+  70%  { box-shadow: 0 0 0 12px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes bookrBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ── Responsive helpers ──────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ── Base reset ──────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100svh;
+}

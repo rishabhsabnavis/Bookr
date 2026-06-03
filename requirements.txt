@@ -1,0 +1,37 @@
+# FastAPI
+fastapi
+uvicorn
+
+# LangChain / LangGraph
+langchain
+langchain-anthropic
+langgraph
+langgraph-supervisor
+langgraph-checkpoint-postgres
+
+# LiveKit voice pipeline
+livekit
+livekit-agents
+livekit-plugins-silero
+livekit-plugins-deepgram
+livekit-plugins-anthropic
+livekit-plugins-elevenlabs
+livekit-plugins-turn-detector
+livekit-plugins-ai-coustics
+
+# Database
+pymongo[srv]
+psycopg2-binary
+pgvector
+
+# OpenAI (embeddings)
+openai
+
+# PDF parsing (EPK upload)
+pymupdf
+
+# Data
+pandas
+
+# Utilities
+python-dotenv

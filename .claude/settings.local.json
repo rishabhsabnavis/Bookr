@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npm install *)",
+      "Bash(./node_modules/.bin/tailwindcss init *)",
+      "Bash(python3 -c \"from pgvector_client import create_connection, create_venues_table\")"
+    ]
+  }
+}

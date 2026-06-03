@@ -1,0 +1,13 @@
+.env
+.venv
+Frontend/node_modules
+Frontend/dist
+Frontend/.vite
+design_handoff_dashboard
+soundcheck
+__pycache__
+**/__pycache__
+**/*.pyc
+.git
+.gitignore
+*.md
