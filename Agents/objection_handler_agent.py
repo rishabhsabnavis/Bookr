@@ -47,5 +47,6 @@ Example: "I'm [DJ name]'s booking assistant — [DJ name] plays [genre] and has 
 objection_handler_agent = create_agent(
     model = model,
     tools = [],
-    system_prompt = prompt
+    system_prompt = prompt,
+    name = "objection_handler_agent",
 )

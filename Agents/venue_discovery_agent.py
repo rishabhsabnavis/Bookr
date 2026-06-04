@@ -65,6 +65,6 @@ You are responsible for discovering venues for a DJ.
 venue_discovery_agent = create_agent(
     model = model,
     tools = [search_venues],
-    system_prompt = prompt
-
+    system_prompt = prompt,
+    name = "venue_discovery_agent",
 )

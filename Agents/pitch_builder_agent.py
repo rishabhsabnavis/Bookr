@@ -89,7 +89,8 @@ Rules:
 pitch_builder_agent = create_agent(
     model = model,
     tools = [build_pitch],
-    system_prompt = prompt
+    system_prompt = prompt,
+    name = "pitch_builder_agent",
 )
 
 
