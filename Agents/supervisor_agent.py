@@ -63,7 +63,7 @@ supervisor = create_supervisor(
     tools=[request_dj_approval],
 )
 
-_pg_conn = psycopg.connect(os.getenv("POSTGRES_URL"))
+_pg_conn = psycopg.connect(os.getenv("POSTGRES_URL"), autocommit=True)
 _checkpointer = PostgresSaver(_pg_conn)
 _checkpointer.setup()
 
