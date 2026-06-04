@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from openai import OpenAI
 from dotenv import load_dotenv
-from pgvector_client import create_connection, create_venues_table
+from DB.pgvector_client import create_connection, create_venues_table
 
 load_dotenv()
 
