@@ -22,6 +22,7 @@ livekit-plugins-ai-coustics
 # Database
 pymongo[srv]
 psycopg2-binary
+psycopg[binary]
 pgvector
 
 # OpenAI (embeddings)
