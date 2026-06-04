@@ -13,7 +13,7 @@ from langchain.tools import tool
 from objection_handler_agent import objection_handler_agent
 from pitch_builder_agent import pitch_builder_agent
 from venue_discovery_agent import venue_discovery_agent
-import psycopg2
+import psycopg
 
 
 @tool
@@ -63,7 +63,7 @@ supervisor = create_supervisor(
     tools=[request_dj_approval],
 )
 
-_pg_conn = psycopg2.connect(os.getenv("POSTGRES_URL"))
+_pg_conn = psycopg.connect(os.getenv("POSTGRES_URL"))
 _checkpointer = PostgresSaver(_pg_conn)
 _checkpointer.setup()
 
