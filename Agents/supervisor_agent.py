@@ -1,6 +1,10 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+
 from langgraph_supervisor import create_supervisor
 from langgraph.types import interrupt
 from langgraph.checkpoint.postgres import PostgresSaver
@@ -10,7 +14,6 @@ from objection_handler_agent import objection_handler_agent
 from pitch_builder_agent import pitch_builder_agent
 from venue_discovery_agent import venue_discovery_agent
 import psycopg2
-import os
 
 
 @tool
