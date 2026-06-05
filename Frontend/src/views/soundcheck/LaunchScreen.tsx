@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { EqBars } from '../../components/primitives/EqBars';
 import { LiveDot } from '../../components/primitives/LiveDot';
 import { Mono } from '../../components/primitives/Mono';
+import { callsClient } from '../../lib/callsClient';
 import type { SoundcheckData } from '../../types/soundcheck';
 
 type CallStatus = 'queued' | 'dialing' | 'connected' | 'voicemail' | 'hold';
@@ -11,13 +12,15 @@ interface Props {
   onBack: () => void;
 }
 
-const SEED_VENUES = [
-  { name: 'Elsewhere',     city: 'Brooklyn' },
-  { name: 'Good Room',     city: 'Brooklyn' },
-  { name: 'House of Yes',  city: 'Brooklyn' },
-  { name: 'Nowadays',      city: 'Brooklyn' },
-  { name: 'Public Records',city: 'Brooklyn' },
-  { name: 'Mansions',      city: 'Los Angeles' },
+interface VenueRow { name: string; city: string; }
+
+const SEED_VENUES: VenueRow[] = [
+  { name: 'Elsewhere',      city: 'Brooklyn'     },
+  { name: 'Good Room',      city: 'Brooklyn'     },
+  { name: 'House of Yes',   city: 'Brooklyn'     },
+  { name: 'Nowadays',       city: 'Brooklyn'     },
+  { name: 'Public Records', city: 'Brooklyn'     },
+  { name: 'Mansions',       city: 'Los Angeles'  },
 ];
 
 const FLOW: Record<CallStatus, CallStatus> = {
@@ -25,25 +28,40 @@ const FLOW: Record<CallStatus, CallStatus> = {
 };
 
 const STATUS_STYLE: Record<CallStatus, { c: string; bg: string; label: string }> = {
-  queued:    { c: 'var(--muted)',   bg: 'var(--inset)',       label: 'QUEUED' },
-  dialing:   { c: 'var(--accent)',  bg: 'var(--accent-soft)', label: 'DIALING' },
-  connected: { c: '#3FBF7F',        bg: 'rgba(63,191,127,0.14)', label: 'ON CALL' },
-  hold:      { c: 'var(--accent)',  bg: 'var(--accent-soft)', label: 'HOLD · NEEDS YOU' },
-  voicemail: { c: 'var(--muted)',   bg: 'var(--inset)',       label: 'VOICEMAIL' },
+  queued:    { c: 'var(--muted)',  bg: 'var(--inset)',          label: 'QUEUED'          },
+  dialing:   { c: 'var(--accent)', bg: 'var(--accent-soft)',    label: 'DIALING'         },
+  connected: { c: '#3FBF7F',       bg: 'rgba(63,191,127,0.14)', label: 'ON CALL'         },
+  hold:      { c: 'var(--accent)', bg: 'var(--accent-soft)',    label: 'HOLD · NEEDS YOU'},
+  voicemail: { c: 'var(--muted)',  bg: 'var(--inset)',          label: 'VOICEMAIL'       },
 };
 
 export function LaunchScreen({ data, onBack }: Props) {
   const cities = data.cities.length ? data.cities : ['Brooklyn'];
-  const target = 18 + data.venues.length * 4 + data.cities.length * 3;
-
-  const [matched, setMatched] = useState(0);
+  const [venueList, setVenueList] = useState<VenueRow[]>(SEED_VENUES);
   const [statuses, setStatuses] = useState<CallStatus[]>(SEED_VENUES.map(() => 'queued'));
+  const [matched, setMatched] = useState(0);
 
+  // Fetch real matched venues
   useEffect(() => {
-    const iv = setInterval(() => setMatched((m) => m < target ? Math.min(target, m + Math.ceil(target / 22)) : m), 60);
-    return () => clearInterval(iv);
-  }, [target]);
+    const djId = localStorage.getItem('bookr.dj_id');
+    if (!djId) return;
+    callsClient.getMatchedVenues(djId, data.cities[0] ?? '', data.venues[0] ?? '').then((venues) => {
+      if (venues.length === 0) return;
+      const list = venues.slice(0, 6).map((v) => ({ name: v.venue_name, city: v.city }));
+      setVenueList(list);
+      setStatuses(list.map(() => 'queued' as CallStatus));
+    });
+  }, []);
 
+  // Animate matched count up to real venue count
+  useEffect(() => {
+    const target = venueList.length;
+    if (matched >= target) return;
+    const iv = setInterval(() => setMatched((m) => m < target ? Math.min(target, m + 1) : m), 80);
+    return () => clearInterval(iv);
+  }, [venueList.length, matched]);
+
+  // Cycle statuses
   useEffect(() => {
     let i = 0;
     const iv = setInterval(() => {
@@ -101,11 +119,11 @@ export function LaunchScreen({ data, onBack }: Props) {
             <Mono style={{ color: 'var(--muted)', letterSpacing: '0.12em' }}>LIVE CALL QUEUE</Mono>
             <EqBars bars={6} color="var(--accent)" h={16} w={2.5} gap={2.5} />
           </div>
-          {SEED_VENUES.map((v, i) => {
-            const s = STATUS_STYLE[statuses[i]];
+          {venueList.map((v, i) => {
+            const s = STATUS_STYLE[statuses[i] ?? 'queued'];
             const active = statuses[i] === 'dialing' || statuses[i] === 'connected';
             return (
-              <div key={i} style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 14, borderBottom: i < SEED_VENUES.length - 1 ? '1px solid var(--line2)' : 'none' }}>
+              <div key={i} style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 14, borderBottom: i < venueList.length - 1 ? '1px solid var(--line2)' : 'none' }}>
                 <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--inset)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 34px' }}>
                   {active
                     ? <EqBars bars={3} color="var(--accent)" h={14} w={2} gap={2} seed={i} />

@@ -10,7 +10,7 @@ import { useDashboardStore } from './store/dashboardStore';
 import type { NavKey } from './components/layout/NavItem';
 
 export default function App() {
-  const { calls, holdState, activeView, openId, loadCalls, setView, setOpenId, decideHold } = useDashboardStore();
+  const { calls, holdState, activeView, openId, loadCalls, setView, setOpenId, setWatchCallId, decideHold } = useDashboardStore();
   const vw = useVW();
   const mobile = vw < 900;
 
@@ -71,7 +71,7 @@ export default function App() {
             onClose={() => setOpenId(null)}
             onApprove={() => decideHold(openId, 'approve')}
             onPass={() => decideHold(openId, 'pass')}
-            onWatch={() => { setOpenId(null); setView('watch'); }}
+            onWatch={() => { setWatchCallId(openId); setOpenId(null); setView('watch'); }}
           />
         );
       })()}

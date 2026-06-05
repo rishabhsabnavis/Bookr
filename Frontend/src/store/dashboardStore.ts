@@ -8,10 +8,12 @@ interface DashboardState {
   holdState: Record<string, HoldStatus>;
   activeView: 'overview' | 'calls' | 'watch';
   openId: string | null;
+  watchCallId: string | null;
   loadCalls: () => Promise<void>;
   decideHold: (id: string, decision: 'approve' | 'pass') => Promise<void>;
   setView: (view: DashboardState['activeView']) => void;
   setOpenId: (id: string | null) => void;
+  setWatchCallId: (id: string | null) => void;
 }
 
 export const useDashboardStore = create<DashboardState>()(
@@ -21,6 +23,7 @@ export const useDashboardStore = create<DashboardState>()(
       holdState: {},
       activeView: 'overview',
       openId: null,
+      watchCallId: null,
 
       loadCalls: async () => {
         const calls = await callsClient.listCalls();
@@ -53,6 +56,7 @@ export const useDashboardStore = create<DashboardState>()(
 
       setView: (view) => set({ activeView: view }),
       setOpenId: (id) => set({ openId: id }),
+      setWatchCallId: (id) => set({ watchCallId: id }),
     }),
     {
       name: 'bookr.dash',

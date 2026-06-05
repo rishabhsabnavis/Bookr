@@ -86,4 +86,28 @@ async function startCampaign(djId: string, city: string, venueType: string): Pro
   });
 }
 
-export const callsClient = { listCalls, getCall, decideHold, createDJ, startCampaign };
+export interface MatchedVenue {
+  id: number;
+  venue_name: string;
+  city: string;
+  venue_type: string;
+  contact_name: string;
+  contact_phone: string;
+  similarity: number;
+}
+
+async function getMatchedVenues(djId: string, city = '', venueType = ''): Promise<MatchedVenue[]> {
+  if (!BASE_URL) return [];
+  try {
+    const params = new URLSearchParams({ dj_id: djId });
+    if (city) params.set('city', city);
+    if (venueType) params.set('venue_type', venueType);
+    const res = await fetch(`${BASE_URL}/venues/matched?${params}`);
+    const data = await res.json();
+    return data.venues ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export const callsClient = { listCalls, getCall, decideHold, createDJ, startCampaign, getMatchedVenues };

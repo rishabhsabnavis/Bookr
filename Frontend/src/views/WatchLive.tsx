@@ -7,8 +7,7 @@ import { LiveDot } from '../components/primitives/LiveDot';
 import { Mono } from '../components/primitives/Mono';
 import { useVW } from '../hooks/useVW';
 import { LIVE_CALL } from '../lib/mockData';
-
-const TURNS = LIVE_CALL.transcript;
+import { useDashboardStore } from '../store/dashboardStore';
 
 const PIPELINE = [
   { name: 'Deepgram',      role: 'STT',       activeWhen: 'listening' },
@@ -19,6 +18,10 @@ const PIPELINE = [
 export function WatchLive() {
   const vw = useVW();
   const mobile = vw < 900;
+  const { calls, watchCallId } = useDashboardStore();
+  const watchCall = watchCallId ? calls.find((c) => c.id === watchCallId) : null;
+  const activeCall = watchCall ?? LIVE_CALL;
+  const TURNS = (watchCall?.transcript?.length ? watchCall.transcript : LIVE_CALL.transcript);
 
   const [shown, setShown] = useState(1);
   const [typed, setTyped] = useState(0);
@@ -124,7 +127,7 @@ export function WatchLive() {
               <Turn
                 key={i}
                 turn={turn}
-                venue={LIVE_CALL.venue}
+                venue={activeCall.venue}
                 typing={i === shown - 1 && typed < TURNS[i].text.length}
               />
             ))}
@@ -178,13 +181,13 @@ export function WatchLive() {
               </Mono>
             </div>
             <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
-              {LIVE_CALL.venue}
+              {activeCall.venue}
             </div>
             <Mono style={{ color: 'rgba(255,255,255,0.6)', display: 'block', marginTop: 5 }}>
-              {LIVE_CALL.city.toUpperCase()} · {LIVE_CALL.type.toUpperCase()} · FIT {LIVE_CALL.fit}
+              {activeCall.city.toUpperCase()} · {activeCall.type.toUpperCase()} · FIT {activeCall.fit}
             </Mono>
             <Mono style={{ color: 'rgba(255,255,255,0.45)', display: 'block', marginTop: 3 }}>
-              {LIVE_CALL.phone}
+              {activeCall.phone}
             </Mono>
 
             {/* live waveform */}

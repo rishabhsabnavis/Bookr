@@ -14,6 +14,8 @@ load_dotenv()
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from Agents.supervisor_agent import app as supervisor_app
+from DB.seed_venues import embed_text
+from DB.pgvector_client import create_connection
 
 app = FastAPI()
 
@@ -151,6 +153,42 @@ async def get_call(call_log_id: str):
     call["dj_id"] = str(call["dj_id"])
     call["venue_id"] = str(call["venue_id"])
     return call
+
+# ── Venue matching ────────────────────────────────────────────────────────────
+
+@app.get("/venues/matched")
+async def get_matched_venues(dj_id: str, city: str = "", venue_type: str = ""):
+    dj = db["dj_profiles"].find_one({"_id": ObjectId(dj_id)})
+    if not dj:
+        raise HTTPException(status_code=404, detail="DJ not found")
+    profile_text = f"{dj['dj_name']} plays {', '.join(dj.get('genre_tags', []))} in {city or ', '.join(dj.get('target_cities', []))}"
+    embedding = embed_text(profile_text)
+    conn, cur = create_connection()
+    params = [embedding]
+    filters = []
+    if city:
+        filters.append("city = %s")
+        params.append(city)
+    if venue_type:
+        filters.append("venue_type = %s")
+        params.append(venue_type)
+    where = ("WHERE " + " AND ".join(filters)) if filters else ""
+    params.append(embedding)
+    cur.execute(f"""
+        SELECT id, venue_name, city, venue_type, contact_name, contact_phone,
+               1 - (embedding <=> %s::vector) AS similarity
+        FROM venues
+        {where}
+        ORDER BY embedding <=> %s::vector
+        LIMIT 12;
+    """, params)
+    rows = cur.fetchall()
+    conn.close()
+    return {"venues": [
+        {"id": r[0], "venue_name": r[1], "city": r[2], "venue_type": r[3],
+         "contact_name": r[4], "contact_phone": r[5], "similarity": round(r[6], 4)}
+        for r in rows
+    ]}
 
 # ── DJ profiles ───────────────────────────────────────────────────────────────
 
