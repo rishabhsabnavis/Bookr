@@ -6,3 +6,6 @@ livekit-plugins-ai-coustics
 livekit-plugins-deepgram
 livekit-plugins-anthropic
 livekit-plugins-elevenlabs
+pymongo[srv]
+psycopg2-binary
+pgvector
