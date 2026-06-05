@@ -43,7 +43,8 @@ def seed():
     create_venues_table()
 
     conn, cursor = create_connection()
-    df = pd.read_csv("venues_mock.csv")
+    csv_path = os.path.join(os.path.dirname(__file__), "venues_mock.csv")
+    df = pd.read_csv(csv_path)
 
     for _, row in df.iterrows():
         # build a descriptive string to embed — combines the fields most relevant to matching

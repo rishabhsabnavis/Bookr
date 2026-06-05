@@ -49,8 +49,8 @@ def dispatch_call(dj_id: str, venue_id: str, pitch: str) -> str:
             api_key=os.getenv("LIVEKIT_API_KEY"),
             api_secret=os.getenv("LIVEKIT_API_SECRET"),
         )
-        asyncio.get_event_loop().run_until_complete(
-            lk.agent_dispatch.create_dispatch(
+        async def _dispatch():
+            await lk.agent_dispatch.create_dispatch(
                 livekit_api.CreateAgentDispatchRequest(
                     agent_name="outbound-caller",
                     room=f"call_{venue_id}",
@@ -62,8 +62,8 @@ def dispatch_call(dj_id: str, venue_id: str, pitch: str) -> str:
                     }),
                 )
             )
-        )
-        asyncio.get_event_loop().run_until_complete(lk.aclose())
+            await lk.aclose()
+        asyncio.run(_dispatch())
         return f"Call dispatched to {venue_name} at {phone_number}"
     except Exception as e:
         return f"Dispatch failed: {str(e)}"
