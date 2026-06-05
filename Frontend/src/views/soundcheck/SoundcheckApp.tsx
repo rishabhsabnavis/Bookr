@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { callsClient } from '../../lib/callsClient';
 import { Brand } from '../../components/Brand';
 import { LiveDot } from '../../components/primitives/LiveDot';
 import { Mono } from '../../components/primitives/Mono';
@@ -37,10 +38,12 @@ export function SoundcheckApp() {
   const vw = useVW();
   const mobile = vw < 900;
 
-  const [step, setStep]       = useState(() => load('bookr.step', 0));
-  const [data, setData]       = useState<SoundcheckData>(() => ({ ...DEFAULT_DATA, ...load('bookr.data', {}) }));
-  const [visited, setVisited] = useState<number[]>(() => load('bookr.visited', [0]));
+  const [step, setStep]         = useState(() => load('bookr.step', 0));
+  const [data, setData]         = useState<SoundcheckData>(() => ({ ...DEFAULT_DATA, ...load('bookr.data', {}) }));
+  const [visited, setVisited]   = useState<number[]>(() => load('bookr.visited', [0]));
   const [launched, setLaunched] = useState(() => load('bookr.launched', false));
+  const [launching, setLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState<string | null>(null);
 
   const set = (k: keyof SoundcheckData, v: unknown) => {
     setData((d) => { const next = { ...d, [k]: v }; save('bookr.data', next); return next; });
@@ -51,9 +54,21 @@ export function SoundcheckApp() {
     setVisited((prev) => { const next = prev.includes(i) ? prev : [...prev, i]; save('bookr.visited', next); return next; });
   };
 
-  const next = () => {
-    if (step < STEPS.length - 1) go(step + 1);
-    else { setLaunched(true); save('bookr.launched', true); }
+  const next = async () => {
+    if (step < STEPS.length - 1) { go(step + 1); return; }
+    setLaunching(true);
+    setLaunchError(null);
+    try {
+      const djId = await callsClient.createDJ(data);
+      localStorage.setItem('bookr.dj_id', djId);
+      await callsClient.startCampaign(djId, data.cities[0] ?? '', data.venues[0] ?? 'nightclub');
+      setLaunched(true);
+      save('bookr.launched', true);
+    } catch {
+      setLaunchError('Launch failed — check your connection and try again.');
+    } finally {
+      setLaunching(false);
+    }
   };
   const back = () => { if (step > 0) go(step - 1); };
 
@@ -156,8 +171,11 @@ export function SoundcheckApp() {
                 <LiveDot color="#3FBF7F" size={6} />Autosaved
               </span>
             )}
-            <button onClick={next} style={{ padding: '12px 26px', borderRadius: 14, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontSize: 14, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              {step === STEPS.length - 1 ? 'Launch campaign →' : 'Continue →'}
+            {launchError && (
+              <span style={{ fontSize: 13, color: '#c0392b' }}>{launchError}</span>
+            )}
+            <button onClick={next} disabled={launching} style={{ padding: '12px 26px', borderRadius: 14, border: 'none', background: launching ? 'var(--faint)' : 'var(--accent)', color: 'var(--on-accent)', fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontSize: 14, fontWeight: 700, cursor: launching ? 'default' : 'pointer', whiteSpace: 'nowrap', opacity: launching ? 0.7 : 1 }}>
+              {launching ? 'Launching…' : step === STEPS.length - 1 ? 'Launch campaign →' : 'Continue →'}
             </button>
           </div>
         </div>

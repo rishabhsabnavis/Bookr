@@ -7,7 +7,7 @@ import { LiveDot } from '../components/primitives/LiveDot';
 import { Mono } from '../components/primitives/Mono';
 import { useDashboardStore } from '../store/dashboardStore';
 import { useLiveQueue } from '../hooks/useLiveQueue';
-import { MOCK_DJ } from '../lib/djData';
+import { getLiveDJ } from '../lib/djData';
 
 function greeting() {
   const h = new Date().getHours();
@@ -19,6 +19,7 @@ function greeting() {
 export function Overview() {
   const { calls, holdState, decideHold, setView } = useDashboardStore();
   const queue = useLiveQueue();
+  const dj = getLiveDJ();
 
   const completed = calls.filter((c) => c.durationSeconds > 0).length;
   const allHolds = calls.filter((c) => c.outcome === 'hold');
@@ -39,10 +40,10 @@ export function Overview() {
       }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 30, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--ink)' }}>
-            {greeting()}, {MOCK_DJ.name}
+            {greeting()}, {dj.name}
           </h1>
           <p style={{ margin: '8px 0 0', fontSize: 15, color: 'var(--muted)' }}>
-            Your agent ran {calls.length} calls today across {MOCK_DJ.cities.slice(0, 2).join(' & ')}.
+            Your agent ran {calls.length} calls today across {dj.cities.slice(0, 2).join(' & ')}.
           </p>
         </div>
         <div style={{
