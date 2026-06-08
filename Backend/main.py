@@ -60,12 +60,27 @@ class DJProfileRequest(BaseModel):
 
 @app.post("/campaign/start")
 async def start_campaign(request: StartCampaignRequest):
+    dj = db["dj_profiles"].find_one({"_id": ObjectId(request.dj_id)})
+    if not dj:
+        raise HTTPException(status_code=404, detail="DJ not found")
+
+    profile_summary = (
+        f"{dj['dj_name']} — genres: {', '.join(dj.get('genre_tags', []))}, "
+        f"bio: {dj.get('bio', '')}, "
+        f"past gigs: {dj.get('past_gigs', '')}, "
+        f"mix links: {', '.join(dj.get('mix_links', []))}"
+    )
+
     config = {"configurable": {"thread_id": f"campaign_{request.dj_id}"}}
     initial_input = {
         "messages": [
             {
                 "role": "user",
-                "content": f"Start a booking campaign for DJ ID {request.dj_id} targeting {request.venue_type} venues in {request.city}."
+                "content": (
+                    f"Start a booking campaign for DJ ID {request.dj_id}. "
+                    f"DJ profile: {profile_summary}. "
+                    f"Target: {request.venue_type} venues in {request.city}."
+                )
             }
         ]
     }
