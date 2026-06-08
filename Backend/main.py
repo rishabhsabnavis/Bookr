@@ -13,7 +13,7 @@ import sys
 load_dotenv()
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from Agents.supervisor_agent import app as supervisor_app
+from Agents.supervisor_agent import get_app as get_supervisor_app
 from DB.seed_venues import embed_text
 from DB.pgvector_client import create_connection
 
@@ -64,14 +64,14 @@ async def start_campaign(request: StartCampaignRequest):
         ]
     }
     asyncio.create_task(
-        asyncio.to_thread(supervisor_app.invoke, initial_input, config)
+        asyncio.to_thread(get_supervisor_app().invoke, initial_input, config)
     )
     return {"status": "campaign started", "thread_id": config["configurable"]["thread_id"]}
 
 @app.get("/campaign/{dj_id}/status")
 async def get_campaign_status(dj_id: str):
     config = {"configurable": {"thread_id": f"campaign_{dj_id}"}}
-    state = supervisor_app.get_state(config)
+    state = get_supervisor_app().get_state(config)
     if not state:
         raise HTTPException(status_code=404, detail="No campaign found for this DJ")
     return {"status": "paused" if state.next else "running", "next": state.next}
@@ -95,7 +95,7 @@ async def approve_hold(call_log_id: str):
     )
     log = db["call_logs"].find_one({"_id": ObjectId(call_log_id)})
     config = {"configurable": {"thread_id": f"campaign_{str(log['dj_id'])}"}}
-    await asyncio.to_thread(supervisor_app.invoke, Command(resume="approved"), config)
+    await asyncio.to_thread(get_supervisor_app().invoke, Command(resume="approved"), config)
     return {"status": "approved", "call_log_id": call_log_id}
 
 @app.post("/holds/{call_log_id}/decline")
@@ -106,7 +106,7 @@ async def decline_hold(call_log_id: str):
     )
     log = db["call_logs"].find_one({"_id": ObjectId(call_log_id)})
     config = {"configurable": {"thread_id": f"campaign_{str(log['dj_id'])}"}}
-    await asyncio.to_thread(supervisor_app.invoke, Command(resume="declined"), config)
+    await asyncio.to_thread(get_supervisor_app().invoke, Command(resume="declined"), config)
     return {"status": "declined", "call_log_id": call_log_id}
 
 # ── Call dispatch ─────────────────────────────────────────────────────────────

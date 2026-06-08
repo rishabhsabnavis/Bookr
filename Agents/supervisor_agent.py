@@ -120,8 +120,13 @@ supervisor = create_supervisor(
     tools=[dispatch_call, request_dj_approval],
 )
 
-_pg_conn = psycopg.connect(os.getenv("POSTGRES_URL"), autocommit=True)
-_checkpointer = PostgresSaver(_pg_conn)
-_checkpointer.setup()
+_setup_done = False
 
-app = supervisor.compile(checkpointer=_checkpointer)
+def get_app():
+    global _setup_done
+    conn = psycopg.connect(os.getenv("POSTGRES_URL"), autocommit=True)
+    checkpointer = PostgresSaver(conn)
+    if not _setup_done:
+        checkpointer.setup()
+        _setup_done = True
+    return supervisor.compile(checkpointer=checkpointer)
