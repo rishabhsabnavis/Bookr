@@ -32,7 +32,7 @@ def search_venues(dj_profile: str, city: str, venue_type: str) -> list[dict]:
     text_to_embed = f"DJ playing {dj_profile} looking for {venue_type} venues in {city}"
     djembedding = embed_text(text_to_embed)
     cur.execute("""
-    SELECT venue_name, city, venue_type, contact_name, contact_phone, contact_email,
+    SELECT id, venue_name, city, venue_type, contact_name, contact_phone, contact_email,
            1 - (embedding <=> %s::vector) AS similarity
     FROM venues
     WHERE city = %s AND venue_type = %s
@@ -45,13 +45,14 @@ def search_venues(dj_profile: str, city: str, venue_type: str) -> list[dict]:
 
     return [
     {
-        "venue_name": row[0],
-        "city": row[1],
-        "venue_type": row[2],
-        "contact_name": row[3],
-        "contact_phone": row[4],
-        "contact_email": row[5],
-        "similarity": round(row[6], 4)
+        "venue_id": row[0],
+        "venue_name": row[1],
+        "city": row[2],
+        "venue_type": row[3],
+        "contact_name": row[4],
+        "contact_phone": row[5],
+        "contact_email": row[6],
+        "similarity": round(row[7], 4)
     }
     for row in rows
     ]       
