@@ -11,7 +11,10 @@ import logging
 from dotenv import load_dotenv
 import sys
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("gigcaller")
+
+_background_tasks = set()
 
 load_dotenv()
 
@@ -76,7 +79,9 @@ async def start_campaign(request: StartCampaignRequest):
         except Exception as e:
             logger.error(f"Campaign failed for DJ {request.dj_id}: {e}", exc_info=True)
 
-    asyncio.create_task(asyncio.to_thread(run_campaign))
+    task = asyncio.create_task(asyncio.to_thread(run_campaign))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     return {"status": "campaign started", "thread_id": config["configurable"]["thread_id"]}
 
 @app.get("/campaign/{dj_id}/status")
