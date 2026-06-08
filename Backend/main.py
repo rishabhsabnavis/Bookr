@@ -7,8 +7,11 @@ from livekit import api
 import os
 import asyncio
 import json
+import logging
 from dotenv import load_dotenv
 import sys
+
+logger = logging.getLogger("gigcaller")
 
 load_dotenv()
 
@@ -63,9 +66,17 @@ async def start_campaign(request: StartCampaignRequest):
             }
         ]
     }
-    asyncio.create_task(
-        asyncio.to_thread(get_supervisor_app().invoke, initial_input, config)
-    )
+
+    def run_campaign():
+        try:
+            logger.info(f"Campaign starting for DJ {request.dj_id}")
+            supervisor = get_supervisor_app()
+            result = supervisor.invoke(initial_input, config)
+            logger.info(f"Campaign finished for DJ {request.dj_id}: {result}")
+        except Exception as e:
+            logger.error(f"Campaign failed for DJ {request.dj_id}: {e}", exc_info=True)
+
+    asyncio.create_task(asyncio.to_thread(run_campaign))
     return {"status": "campaign started", "thread_id": config["configurable"]["thread_id"]}
 
 @app.get("/campaign/{dj_id}/status")
