@@ -42,13 +42,33 @@ def build_pitch(dj_id: str, venue_id: str):
 
     conn, cur = create_connection()
 
-    cur.execute("""
-        SELECT venue_name, city, venue_type, genres_booked, notes
-        FROM venues
-        WHERE id = %s
-    """, (venue_id,))
+    # venue_id may arrive as an integer id or, if the LLM mangled it, as a
+    # name/slug. Try integer lookup first, then fall back to a name match.
+    venue = None
+    if str(venue_id).isdigit():
+        cur.execute("""
+            SELECT venue_name, city, venue_type, genres_booked, notes
+            FROM venues
+            WHERE id = %s
+        """, (int(venue_id),))
+        venue = cur.fetchone()
 
-    venue = cur.fetchone()
+    if venue is None:
+        # Match on the first word of the guess — the most distinctive part of
+        # a venue name (e.g. "echoes-nightclub-nyc" -> "echoes" -> "Echoes Nightclub").
+        first_word = str(venue_id).replace("-", " ").replace("_", " ").split()[0]
+        cur.execute("""
+            SELECT venue_name, city, venue_type, genres_booked, notes
+            FROM venues
+            WHERE venue_name ILIKE %s
+            LIMIT 1
+        """, (f"{first_word}%",))
+        venue = cur.fetchone()
+
+    if venue is None:
+        client.close()
+        conn.close()
+        return f"Error: could not find venue '{venue_id}' in the database."
 
     llm = ChatAnthropic(model="claude-sonnet-4-6")
     response = llm.invoke(f"""

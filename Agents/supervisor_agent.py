@@ -37,12 +37,18 @@ def dispatch_call(dj_id: str, venue_id: str, pitch: str) -> str:
     """
     try:
         conn, cur = create_connection()
-        cur.execute("SELECT venue_name, contact_phone FROM venues WHERE id = %s", (venue_id,))
-        row = cur.fetchone()
+        row = None
+        if str(venue_id).isdigit():
+            cur.execute("SELECT id, venue_name, contact_phone FROM venues WHERE id = %s", (int(venue_id),))
+            row = cur.fetchone()
+        if row is None:
+            first_word = str(venue_id).replace("-", " ").replace("_", " ").split()[0]
+            cur.execute("SELECT id, venue_name, contact_phone FROM venues WHERE venue_name ILIKE %s LIMIT 1", (f"{first_word}%",))
+            row = cur.fetchone()
         conn.close()
         if not row:
             return f"Error: venue {venue_id} not found in database"
-        venue_name, phone_number = row
+        venue_id, venue_name, phone_number = row
 
         lk = livekit_api.LiveKitAPI(
             url=os.getenv("LIVEKIT_URL"),
