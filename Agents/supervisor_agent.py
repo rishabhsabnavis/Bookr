@@ -50,12 +50,12 @@ def dispatch_call(dj_id: str, venue_id: str, pitch: str) -> str:
             return f"Error: venue {venue_id} not found in database"
         venue_id, venue_name, phone_number = row
 
-        lk = livekit_api.LiveKitAPI(
-            url=os.getenv("LIVEKIT_URL"),
-            api_key=os.getenv("LIVEKIT_API_KEY"),
-            api_secret=os.getenv("LIVEKIT_API_SECRET"),
-        )
         async def _dispatch():
+            lk = livekit_api.LiveKitAPI(
+                url=os.getenv("LIVEKIT_URL"),
+                api_key=os.getenv("LIVEKIT_API_KEY"),
+                api_secret=os.getenv("LIVEKIT_API_SECRET"),
+            )
             await lk.agent_dispatch.create_dispatch(
                 livekit_api.CreateAgentDispatchRequest(
                     agent_name="outbound-caller",
