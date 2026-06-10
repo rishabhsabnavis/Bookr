@@ -9,6 +9,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN python -m livekit.agents download-files
-
 CMD ["python", "Agents/outbound_caller_agent.py", "start"]

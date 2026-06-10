@@ -6,7 +6,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from livekit import agents, api
 from livekit.agents import AgentSession, Agent, RunContext
 from livekit.plugins import silero, deepgram, anthropic, elevenlabs
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from livekit.agents.llm import function_tool
 from pymongo import MongoClient
 from DB.pgvector_client import create_connection
@@ -127,7 +126,6 @@ async def entrypoint(ctx: agents.JobContext):
         llm=anthropic.LLM(model="claude-sonnet-4-6"),
         tts=elevenlabs.TTS(),
         vad=silero.VAD.load(),
-        turn_detection=MultilingualModel(),
     )
 
     await session.start(
