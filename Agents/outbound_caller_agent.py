@@ -168,7 +168,7 @@ async def entrypoint(ctx: agents.JobContext):
         return
 
     await session.generate_reply(
-        instruction=f"Greet the caller nicely and introduce yourself as a booking assistant for DJ {dj_profile['dj_name']}"
+        instructions=f"Greet the caller nicely and introduce yourself as a booking assistant for DJ {dj_profile['dj_name']}"
     )
 
 
