@@ -8,6 +8,7 @@ import os
 import asyncio
 import json
 import logging
+import uuid
 from dotenv import load_dotenv
 import sys
 
@@ -71,7 +72,16 @@ async def start_campaign(request: StartCampaignRequest):
         f"mix links: {', '.join(dj.get('mix_links', []))}"
     )
 
-    config = {"configurable": {"thread_id": f"campaign_{request.dj_id}"}}
+    # Fresh thread per run — reusing one thread replays the whole history into
+    # every LLM call (token bloat + rate limits). The active thread is stored in
+    # Mongo so the hold endpoints can resume it.
+    thread_id = f"campaign_{request.dj_id}_{uuid.uuid4().hex[:8]}"
+    db["campaigns"].update_one(
+        {"dj_id": request.dj_id},
+        {"$set": {"thread_id": thread_id}},
+        upsert=True,
+    )
+    config = {"configurable": {"thread_id": thread_id}}
     initial_input = {
         "messages": [
             {
@@ -99,9 +109,15 @@ async def start_campaign(request: StartCampaignRequest):
     task.add_done_callback(_background_tasks.discard)
     return {"status": "campaign started", "thread_id": config["configurable"]["thread_id"]}
 
+def active_thread_id(dj_id: str) -> str:
+    campaign = db["campaigns"].find_one({"dj_id": dj_id})
+    if not campaign:
+        raise HTTPException(status_code=404, detail="No campaign found for this DJ")
+    return campaign["thread_id"]
+
 @app.get("/campaign/{dj_id}/status")
 async def get_campaign_status(dj_id: str):
-    config = {"configurable": {"thread_id": f"campaign_{dj_id}"}}
+    config = {"configurable": {"thread_id": active_thread_id(dj_id)}}
     state = get_supervisor_app().get_state(config)
     if not state:
         raise HTTPException(status_code=404, detail="No campaign found for this DJ")
@@ -125,7 +141,7 @@ async def approve_hold(call_log_id: str):
         {"$set": {"hold_approved": True}}
     )
     log = db["call_logs"].find_one({"_id": ObjectId(call_log_id)})
-    config = {"configurable": {"thread_id": f"campaign_{str(log['dj_id'])}"}}
+    config = {"configurable": {"thread_id": active_thread_id(str(log["dj_id"]))}}
     await asyncio.to_thread(get_supervisor_app().invoke, Command(resume="approved"), config)
     return {"status": "approved", "call_log_id": call_log_id}
 
@@ -136,7 +152,7 @@ async def decline_hold(call_log_id: str):
         {"$set": {"hold_approved": False}}
     )
     log = db["call_logs"].find_one({"_id": ObjectId(call_log_id)})
-    config = {"configurable": {"thread_id": f"campaign_{str(log['dj_id'])}"}}
+    config = {"configurable": {"thread_id": active_thread_id(str(log["dj_id"]))}}
     await asyncio.to_thread(get_supervisor_app().invoke, Command(resume="declined"), config)
     return {"status": "declined", "call_log_id": call_log_id}
 
