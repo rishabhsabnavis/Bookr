@@ -4,7 +4,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from livekit import agents, api
-from livekit.agents import AgentSession, Agent, RunContext
+from livekit.agents import AgentSession, Agent, RunContext, get_job_context
 from livekit.plugins import silero, deepgram, anthropic, elevenlabs
 from livekit.agents.llm import function_tool
 from pymongo import MongoClient
@@ -54,6 +54,7 @@ Get the talent buyer to agree to book {dj_profile['dj_name']} for an upcoming da
 - Do not read from the pitch verbatim — speak naturally.
 - If you reach voicemail, leave a 20-second version: name, genre, one past gig, mix link, callback number.
 - If the person is hostile or clearly uninterested after two attempts, thank them and end the call.
+- When the conversation has concluded and you have said goodbye, you MUST call the end_call tool with the outcome and your sentiment estimate. Calling end_call is what actually hangs up the phone — never wait for the other person to hang up.
 
 ## DJ info for reference
 - Genre: {', '.join(dj_profile['genre_tags'])}
@@ -85,6 +86,9 @@ Get the talent buyer to agree to book {dj_profile['dj_name']} for an upcoming da
             duration_seconds=duration,
             sentiment=round(max(-1.0, min(1.0, sentiment)), 2),
         )
+        # Deleting the room disconnects the SIP participant — this is the hangup.
+        job_ctx = get_job_context()
+        await job_ctx.api.room.delete_room(api.DeleteRoomRequest(room=job_ctx.room.name))
    
 
 
@@ -124,7 +128,9 @@ async def entrypoint(ctx: agents.JobContext):
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
         llm=anthropic.LLM(model="claude-sonnet-4-6"),
-        tts=elevenlabs.TTS(),
+        # Rachel — natural conversational premade voice. Swap voice_id for any
+        # voice in your ElevenLabs library (My Voices -> copy Voice ID).
+        tts=elevenlabs.TTS(voice_id="21m00Tcm4TlvDq8ikWAM", model="eleven_turbo_v2_5"),
         vad=silero.VAD.load(),
     )
 
