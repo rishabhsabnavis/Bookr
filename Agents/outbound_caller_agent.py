@@ -157,10 +157,12 @@ async def entrypoint(ctx: agents.JobContext):
         assistant._start_time = time.time()
 
         @session.on("conversation_item_added")
-        def on_item(item):
-            role = getattr(item, "role", None)
-            text = getattr(item, "text_content", None) or ""
-            if role and text:
+        def on_item(ev):
+            # The event wraps the message: ConversationItemAddedEvent.item
+            msg = getattr(ev, "item", None)
+            role = getattr(msg, "role", None)
+            text = getattr(msg, "text_content", None) or ""
+            if role in ("assistant", "user") and text:
                 assistant._transcript_turns.append({
                     "who": "agent" if role == "assistant" else "buyer",
                     "text": text,
