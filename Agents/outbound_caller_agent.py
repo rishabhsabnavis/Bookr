@@ -77,7 +77,8 @@ Get the talent buyer to agree to book {dj_profile['dj_name']} for an upcoming da
 
         duration = int(time.time() - self._start_time) if self._start_time else 0
 
-        await ctx.session.aclose()
+        # Log BEFORE any teardown — closing the session/room from inside this
+        # tool cancels the tool coroutine, so anything after teardown never runs.
         log_call(
             dj_id=self._dj_id,
             venue_id=self._venue_id,
@@ -87,6 +88,7 @@ Get the talent buyer to agree to book {dj_profile['dj_name']} for an upcoming da
             sentiment=round(max(-1.0, min(1.0, sentiment)), 2),
         )
         # Deleting the room disconnects the SIP participant — this is the hangup.
+        # Do NOT call session.aclose() here; the job shuts down with the room.
         job_ctx = get_job_context()
         await job_ctx.api.room.delete_room(api.DeleteRoomRequest(room=job_ctx.room.name))
    
