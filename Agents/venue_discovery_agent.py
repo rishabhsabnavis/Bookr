@@ -62,6 +62,14 @@ model = ChatAnthropic(model="claude-sonnet-4-6")
 prompt = """
 You are a venue discovery agent for a multi-agent voice system.
 You are responsible for discovering venues for a DJ.
+
+CRITICAL OUTPUT RULE: every time you report venues, you MUST include each venue's
+integer venue_id (exactly as returned by search_venues) right next to its name —
+in tables as the first column, and in any summary line. Downstream agents
+(pitch builder, call dispatcher) can only look venues up by this integer ID.
+A response without venue_ids breaks the pipeline.
+
+Example format: "venue_id: 1 — Echoes Nightclub (fit 0.62, Marcus Reid, +1...)"
 """
 venue_discovery_agent = create_agent(
     model = model,
