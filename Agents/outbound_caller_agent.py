@@ -71,9 +71,9 @@ Get the talent buyer to agree to book {dj_profile['dj_name']} for an upcoming da
             outcome: one of hold, declined, voicemail, no_answer, wrong_number
             sentiment: your estimate of how the call went, from -1.0 (hostile) to 1.0 (very positive)
         """
-        current_speech = ctx.session.current_speech
-        if current_speech:
-            await current_speech.wait_for_playout()
+        # Wait only for the goodbye spoken before this tool call — waiting on
+        # ctx.session.current_speech deadlocks (it owns this tool call).
+        await ctx.wait_for_playout()
 
         duration = int(time.time() - self._start_time) if self._start_time else 0
 
