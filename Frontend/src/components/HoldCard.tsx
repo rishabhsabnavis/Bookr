@@ -23,8 +23,9 @@ function quoteFor(call: Call): string {
 const TERMS_LABELS = ['DATE OFFERED', 'RATE', 'SLOT', 'NEGOTIATED BY'] as const;
 
 export function HoldCard({ call, status, onApprove, onPass, onWatch }: HoldCardProps) {
+  // Mock calls carry structured terms; real call logs don't (the agreed date/
+  // rate live in the transcript). Render either way.
   const h = call.hold;
-  if (!h) return null;
 
   const decided = status === 'booked' || status === 'declined';
 
@@ -34,7 +35,9 @@ export function HoldCard({ call, status, onApprove, onPass, onWatch }: HoldCardP
     ? 'var(--line)'
     : 'var(--accent-line)';
 
-  const termValues = [h.date, `$${h.rate.toLocaleString()}`, h.slot, 'Bookr agent'];
+  const termValues = h
+    ? [h.date, `$${h.rate.toLocaleString()}`, h.slot, 'Bookr agent']
+    : ['See transcript', call.fit ? `Fit ${call.fit}` : '—', call.type || '—', 'Bookr agent'];
 
   return (
     <div style={{

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pymongo import MongoClient
 from bson import ObjectId
@@ -25,6 +26,15 @@ from DB.seed_venues import embed_text
 from DB.pgvector_client import create_connection
 
 app = FastAPI()
+
+# Allow the Vercel-hosted dashboard (and local dev) to call this API from the browser.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 mongo_password = os.getenv("MONGO_PASSWORD")
 mongo_client = MongoClient(
@@ -132,6 +142,7 @@ async def get_pending_holds():
         h["_id"] = str(h["_id"])
         h["dj_id"] = str(h["dj_id"])
         h["venue_id"] = str(h["venue_id"])
+    await asyncio.to_thread(attach_venue_details, holds)
     return {"holds": holds}
 
 @app.post("/holds/{call_log_id}/approve")
@@ -182,6 +193,33 @@ async def dispatch_call(request: DispatchCallRequest):
 
 # ── Call logs ─────────────────────────────────────────────────────────────────
 
+def attach_venue_details(calls: list) -> None:
+    """Join venue details from Postgres into call log dicts (in place).
+
+    call_logs documents only store venue_id — venue name/city/contact live in
+    the venues table, so the dashboard needs them merged into the response.
+    """
+    ids = {int(c["venue_id"]) for c in calls if str(c.get("venue_id", "")).isdigit()}
+    if not ids:
+        return
+    try:
+        conn, cur = create_connection()
+        cur.execute(
+            "SELECT id, venue_name, city, venue_type, contact_name, contact_phone FROM venues WHERE id = ANY(%s)",
+            (list(ids),),
+        )
+        venues = {row[0]: row for row in cur.fetchall()}
+        conn.close()
+    except Exception as e:
+        logger.error(f"Failed to attach venue details: {e}")
+        return
+    for c in calls:
+        if not str(c.get("venue_id", "")).isdigit():
+            continue
+        v = venues.get(int(c["venue_id"]))
+        if v:
+            c["venue_name"], c["city"], c["venue_type"], c["contact_name"], c["contact_phone"] = v[1:]
+
 @app.get("/calls")
 async def get_calls():
     calls = list(db["call_logs"].find().sort("timestamp", -1).limit(50))
@@ -189,6 +227,7 @@ async def get_calls():
         c["_id"] = str(c["_id"])
         c["dj_id"] = str(c["dj_id"])
         c["venue_id"] = str(c["venue_id"])
+    await asyncio.to_thread(attach_venue_details, calls)
     return {"calls": calls}
 
 @app.get("/calls/{call_log_id}")
@@ -199,6 +238,7 @@ async def get_call(call_log_id: str):
     call["_id"] = str(call["_id"])
     call["dj_id"] = str(call["dj_id"])
     call["venue_id"] = str(call["venue_id"])
+    await asyncio.to_thread(attach_venue_details, [call])
     return call
 
 # ── Venue matching ────────────────────────────────────────────────────────────
