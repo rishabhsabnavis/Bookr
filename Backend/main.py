@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from pymongo import MongoClient
 from bson import ObjectId
@@ -27,10 +28,26 @@ from DB.pgvector_client import create_connection
 
 app = FastAPI()
 
-# Allow the Vercel-hosted dashboard (and local dev) to call this API from the browser.
+# ── API key gate ──────────────────────────────────────────────────────────────
+# Require a shared secret on every request so the public API can't be hit by
+# anyone who finds the URL. Enforced only when API_KEY is set in the environment,
+# so the API stays open until the key is configured on both Railway and Vercel.
+# Defined before CORS is added so CORS stays the OUTER middleware — that way the
+# 401 still carries CORS headers and preflight (OPTIONS) is handled by CORS.
+API_KEY = os.getenv("API_KEY")
+
+@app.middleware("http")
+async def require_api_key(request: Request, call_next):
+    if API_KEY and request.method != "OPTIONS":
+        if request.headers.get("x-api-key") != API_KEY:
+            return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+    return await call_next(request)
+
+# Restrict browser callers to the Vercel dashboard (any deploy URL) and local dev.
+# Note: CORS only constrains browsers — the API_KEY gate above is what blocks scripts.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=r"https://bookr-.*\.vercel\.app|http://localhost:\d+",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

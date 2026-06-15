@@ -3,6 +3,15 @@ import { MOCK_CALLS } from './mockData';
 import type { SoundcheckData } from '../types/soundcheck';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? null;
+const API_KEY = import.meta.env.VITE_API_KEY ?? '';
+
+// Shared secret sent on every request; the backend rejects calls without it.
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  return {
+    ...(API_KEY ? { 'x-api-key': API_KEY } : {}),
+    ...(extra ?? {}),
+  };
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapCall(raw: any): Call {
@@ -28,7 +37,7 @@ function mapCall(raw: any): Call {
 async function listCalls(): Promise<Call[]> {
   if (!BASE_URL) return MOCK_CALLS;
   try {
-    const res = await fetch(`${BASE_URL}/calls`);
+    const res = await fetch(`${BASE_URL}/calls`, { headers: authHeaders() });
     const data = await res.json();
     const calls = (data.calls ?? []).map(mapCall);
     return calls.length > 0 ? calls : MOCK_CALLS;
@@ -40,7 +49,7 @@ async function listCalls(): Promise<Call[]> {
 async function getCall(id: string): Promise<Call | undefined> {
   if (!BASE_URL) return MOCK_CALLS.find((c) => c.id === id);
   try {
-    const res = await fetch(`${BASE_URL}/calls/${id}`);
+    const res = await fetch(`${BASE_URL}/calls/${id}`, { headers: authHeaders() });
     if (!res.ok) return MOCK_CALLS.find((c) => c.id === id);
     return mapCall(await res.json());
   } catch {
@@ -51,14 +60,14 @@ async function getCall(id: string): Promise<Call | undefined> {
 async function decideHold(id: string, decision: 'approve' | 'pass'): Promise<void> {
   if (!BASE_URL) return;
   const endpoint = decision === 'approve' ? 'approve' : 'decline';
-  await fetch(`${BASE_URL}/holds/${id}/${endpoint}`, { method: 'POST' });
+  await fetch(`${BASE_URL}/holds/${id}/${endpoint}`, { method: 'POST', headers: authHeaders() });
 }
 
 async function createDJ(data: SoundcheckData): Promise<string> {
   if (!BASE_URL) throw new Error('No API URL configured');
   const res = await fetch(`${BASE_URL}/djs`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       dj_name: data.name,
       bio: data.bio,
@@ -81,7 +90,7 @@ async function startCampaign(djId: string, city: string, venueType: string): Pro
   if (!BASE_URL) return;
   await fetch(`${BASE_URL}/campaign/start`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ dj_id: djId, city, venue_type: venueType }),
   });
 }
@@ -102,7 +111,7 @@ async function getMatchedVenues(djId: string, city = '', venueType = ''): Promis
     const params = new URLSearchParams({ dj_id: djId });
     if (city) params.set('city', city);
     if (venueType) params.set('venue_type', venueType);
-    const res = await fetch(`${BASE_URL}/venues/matched?${params}`);
+    const res = await fetch(`${BASE_URL}/venues/matched?${params}`, { headers: authHeaders() });
     const data = await res.json();
     return data.venues ?? [];
   } catch {
