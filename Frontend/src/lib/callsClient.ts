@@ -34,15 +34,17 @@ function mapCall(raw: any): Call {
   };
 }
 
+// Mock fallback is only used when no API URL is configured (pure local/offline
+// preview). With a real backend we always show real data — empty when there are
+// no calls yet — so demos never display fake venues.
 async function listCalls(): Promise<Call[]> {
   if (!BASE_URL) return MOCK_CALLS;
   try {
     const res = await fetch(`${BASE_URL}/calls`, { headers: authHeaders() });
     const data = await res.json();
-    const calls = (data.calls ?? []).map(mapCall);
-    return calls.length > 0 ? calls : MOCK_CALLS;
+    return (data.calls ?? []).map(mapCall);
   } catch {
-    return MOCK_CALLS;
+    return [];
   }
 }
 
@@ -50,10 +52,10 @@ async function getCall(id: string): Promise<Call | undefined> {
   if (!BASE_URL) return MOCK_CALLS.find((c) => c.id === id);
   try {
     const res = await fetch(`${BASE_URL}/calls/${id}`, { headers: authHeaders() });
-    if (!res.ok) return MOCK_CALLS.find((c) => c.id === id);
+    if (!res.ok) return undefined;
     return mapCall(await res.json());
   } catch {
-    return MOCK_CALLS.find((c) => c.id === id);
+    return undefined;
   }
 }
 
