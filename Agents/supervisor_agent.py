@@ -50,6 +50,14 @@ def dispatch_call(dj_id: str, venue_id: str, pitch: str) -> str:
             return f"Error: venue {venue_id} not found in database"
         venue_id, venue_name, phone_number = row
 
+        # Only dial venues that have a real contact number on file. Skip the rest
+        # so we never place a call to a venue without a verified phone number.
+        if not phone_number or not str(phone_number).strip():
+            return (
+                f"Number not set up for {venue_name} — no verified contact phone on file. "
+                f"Skipping the call and moving to the next venue."
+            )
+
         async def _dispatch():
             lk = livekit_api.LiveKitAPI(
                 url=os.getenv("LIVEKIT_URL"),

@@ -36,13 +36,16 @@ def search_venues(dj_profile: str, city: str, venue_type: str) -> list[dict]:
            1 - (embedding <=> %s::vector) AS similarity
     FROM venues
     WHERE city = %s AND venue_type = %s
-    ORDER BY embedding <=> %s::vector
+    ORDER BY (contact_phone IS NOT NULL AND contact_phone <> '') DESC,
+             embedding <=> %s::vector
     LIMIT 10;
     """, (djembedding, city, venue_type, djembedding)
     )
     rows = cur.fetchall()
     conn.close()
 
+    # dialable venues (with a real phone) are returned first so the supervisor
+    # calls those; venues without a number are flagged so it can skip them.
     return [
     {
         "venue_id": row[0],
@@ -52,10 +55,11 @@ def search_venues(dj_profile: str, city: str, venue_type: str) -> list[dict]:
         "contact_name": row[4],
         "contact_phone": row[5],
         "contact_email": row[6],
+        "dialable": bool(row[5] and str(row[5]).strip()),
         "similarity": round(row[7], 4)
     }
     for row in rows
-    ]       
+    ]
 
 
 model = ChatAnthropic(model="claude-sonnet-4-6")
