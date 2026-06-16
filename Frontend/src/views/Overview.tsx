@@ -40,10 +40,12 @@ export function Overview() {
       }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 30, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--ink)' }}>
-            {greeting()}, {dj.name}
+            {greeting()}{dj.name ? `, ${dj.name}` : ''}
           </h1>
           <p style={{ margin: '8px 0 0', fontSize: 15, color: 'var(--muted)' }}>
-            Your agent ran {calls.length} calls today across {dj.cities.slice(0, 2).join(' & ')}.
+            {calls.length > 0
+              ? `Your agent ran ${calls.length} call${calls.length === 1 ? '' : 's'}${dj.cities.length ? ` across ${dj.cities.slice(0, 2).join(' & ')}` : ''}.`
+              : 'No calls yet — onboard a DJ and launch a campaign to get started.'}
           </p>
         </div>
         <div style={{

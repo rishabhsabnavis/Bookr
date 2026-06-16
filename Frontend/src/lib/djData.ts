@@ -1,10 +1,12 @@
 import type { SoundcheckData } from '../types/soundcheck';
 
+// Neutral defaults so the dashboard shows nothing fabricated before onboarding.
+// Once a DJ onboards, getLiveDJ() reads their real profile from localStorage.
 export const MOCK_DJ = {
-  name: 'RISH',
-  genres: ['Hip-Hop', 'Afrobeats', 'Bollywood', 'R&B'],
-  cities: ['St. Louis', 'Chicago', 'New York', 'Dallas'],
-  rateMin: 500,
+  name: '',
+  genres: [] as string[],
+  cities: [] as string[],
+  rateMin: 0,
 };
 
 export function getLiveDJ() {

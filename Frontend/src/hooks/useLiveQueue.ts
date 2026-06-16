@@ -9,13 +9,8 @@ export interface QueueEntry {
   status: QueueStatus;
 }
 
-const FALLBACK: QueueEntry[] = [
-  { name: 'Paragon',        city: 'Brooklyn',     status: 'connected' },
-  { name: 'Black Flamingo', city: 'Brooklyn',     status: 'dialing'   },
-  { name: 'TBA Brooklyn',   city: 'Brooklyn',     status: 'queued'    },
-  { name: 'The Virgil',     city: 'Los Angeles',  status: 'queued'    },
-  { name: 'Catch One',      city: 'Los Angeles',  status: 'queued'    },
-];
+// No mock fallback — the queue is empty until a real DJ's matched venues load.
+const FALLBACK: QueueEntry[] = [];
 
 const FLOW: Record<QueueStatus, QueueStatus> = {
   queued: 'dialing', dialing: 'connected', connected: 'voicemail', voicemail: 'queued',
