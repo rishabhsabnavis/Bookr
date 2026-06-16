@@ -35,7 +35,7 @@ def search_venues(dj_profile: str, city: str, venue_type: str) -> list[dict]:
     SELECT id, venue_name, city, venue_type, contact_name, contact_phone, contact_email,
            1 - (embedding <=> %s::vector) AS similarity
     FROM venues
-    WHERE city = %s AND venue_type = %s
+    WHERE LOWER(city) = LOWER(%s) AND LOWER(venue_type) = LOWER(%s)
     ORDER BY (contact_phone IS NOT NULL AND contact_phone <> '') DESC,
              embedding <=> %s::vector
     LIMIT 10;

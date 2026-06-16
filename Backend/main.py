@@ -270,11 +270,12 @@ async def get_matched_venues(dj_id: str, city: str = "", venue_type: str = ""):
     conn, cur = create_connection()
     params = [embedding]
     filters = []
+    # case-insensitive so "Nightclub"/"nightclub" and "New York"/"new york" all match
     if city:
-        filters.append("city = %s")
+        filters.append("LOWER(city) = LOWER(%s)")
         params.append(city)
     if venue_type:
-        filters.append("venue_type = %s")
+        filters.append("LOWER(venue_type) = LOWER(%s)")
         params.append(venue_type)
     where = ("WHERE " + " AND ".join(filters)) if filters else ""
     params.append(embedding)
