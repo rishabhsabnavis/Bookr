@@ -40,6 +40,7 @@ export function useLiveQueue() {
   useEffect(() => {
     const iv = setInterval(() => {
       setQueue((q) => {
+        if (q.length === 0) return q; // nothing to cycle yet — avoid indexing []
         const next = q.map((x) => ({ ...x }));
         const i = Math.floor(Math.random() * next.length);
         next[i].status = FLOW[next[i].status];
