@@ -2,7 +2,13 @@ import type { Call } from '../types/calls';
 import { MOCK_CALLS } from './mockData';
 import type { SoundcheckData } from '../types/soundcheck';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? null;
+// Normalize the API URL — if the env var was set without a scheme (e.g. in
+// Vercel), `${BASE_URL}/path` would resolve as a relative URL against the
+// dashboard's own origin and 405. Always force an absolute https URL.
+const RAW_API_URL = import.meta.env.VITE_API_URL ?? null;
+const BASE_URL = RAW_API_URL
+  ? (/^https?:\/\//.test(RAW_API_URL) ? RAW_API_URL : `https://${RAW_API_URL}`)
+  : null;
 const API_KEY = import.meta.env.VITE_API_KEY ?? '';
 
 // Shared secret sent on every request; the backend rejects calls without it.
