@@ -4,7 +4,7 @@ import { VenueMark } from '../VenueMark';
 import { LiveDot } from '../primitives/LiveDot';
 import { Mono } from '../primitives/Mono';
 import { NavItem, NAV, type NavKey } from './NavItem';
-import { MOCK_DJ } from '../../lib/djData';
+import { getLiveDJ } from '../../lib/djData';
 
 interface SidebarProps {
   activeTab: NavKey;
@@ -14,6 +14,7 @@ interface SidebarProps {
 
 export function Sidebar({ activeTab, pendingCount, onTabChange }: SidebarProps) {
   const navigate = useNavigate();
+  const dj = getLiveDJ();
   return (
     <div style={{
       width: 270, flex: '0 0 270px',
@@ -26,7 +27,7 @@ export function Sidebar({ activeTab, pendingCount, onTabChange }: SidebarProps) 
       <Brand />
 
       <Mono style={{ color: 'var(--muted)', marginTop: 32, marginBottom: 12, fontSize: 10.5, letterSpacing: '0.14em', display: 'block' }}>
-        CAMPAIGN · {MOCK_DJ.cities.length} MARKETS
+        CAMPAIGN · {dj.cities.length} MARKET{dj.cities.length === 1 ? '' : 'S'}
       </Mono>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -36,7 +37,7 @@ export function Sidebar({ activeTab, pendingCount, onTabChange }: SidebarProps) 
             label={s.label}
             sub={s.sub}
             active={activeTab === s.key}
-            live={s.key === 'watch'}
+            soon={'soon' in s && s.soon}
             badge={s.key === 'overview' ? pendingCount : undefined}
             onClick={() => onTabChange(s.key)}
           />
@@ -65,18 +66,20 @@ export function Sidebar({ activeTab, pendingCount, onTabChange }: SidebarProps) 
         border: '1px solid var(--line2)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <VenueMark name={MOCK_DJ.name} size={34} active />
+          <VenueMark name={dj.name || 'DJ'} size={34} active />
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)' }}>{MOCK_DJ.name}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)' }}>{dj.name || 'No active campaign'}</div>
             <Mono style={{ color: 'var(--muted)' }}>
-              {MOCK_DJ.genres.slice(0, 2).join(' · ').toUpperCase()}
+              {dj.genres.slice(0, 2).join(' · ').toUpperCase() || 'ONBOARD TO START'}
             </Mono>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 11 }}>
-          <LiveDot size={6} />
-          <Mono style={{ color: 'var(--ink2)', fontWeight: 600 }}>AGENT DIALING NOW</Mono>
-        </div>
+        {dj.name && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 11 }}>
+            <LiveDot size={6} />
+            <Mono style={{ color: 'var(--ink2)', fontWeight: 600 }}>CAMPAIGN ACTIVE</Mono>
+          </div>
+        )}
       </div>
     </div>
   );

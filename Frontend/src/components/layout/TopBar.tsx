@@ -28,22 +28,33 @@ export function TopBar({ activeTab, pendingCount, onTabChange }: TopBarProps) {
       <div style={{ display: 'flex', gap: 8, marginTop: 13, overflowX: 'auto', paddingBottom: 2 }}>
         {NAV.map((s) => {
           const active = activeTab === s.key;
+          const soon = 'soon' in s && s.soon;
           const badge = s.key === 'overview' && pendingCount > 0 ? pendingCount : null;
           return (
             <button
               key={s.key}
-              onClick={() => onTabChange(s.key)}
+              onClick={soon ? undefined : () => onTabChange(s.key)}
+              disabled={soon}
               style={{
                 flex: '0 0 auto', padding: '7px 14px', borderRadius: 999,
                 fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                fontSize: 13, fontWeight: 600, cursor: soon ? 'default' : 'pointer',
                 background: active ? 'var(--accent)' : 'transparent',
                 color: active ? 'var(--on-accent)' : 'var(--muted)',
                 border: `1px solid ${active ? 'var(--accent)' : 'var(--line)'}`,
                 display: 'inline-flex', alignItems: 'center', gap: 7,
+                opacity: soon ? 0.45 : 1,
               }}
             >
               {s.label}
+              {soon && (
+                <span style={{
+                  padding: '1px 6px', borderRadius: 999, background: 'var(--inset)',
+                  border: '1px solid var(--line2)', color: 'var(--muted)',
+                  fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+                  fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+                }}>SOON</span>
+              )}
               {badge != null && (
                 <span style={{
                   minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999,
