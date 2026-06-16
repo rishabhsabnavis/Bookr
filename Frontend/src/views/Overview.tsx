@@ -6,7 +6,7 @@ import { EqBars } from '../components/primitives/EqBars';
 import { LiveDot } from '../components/primitives/LiveDot';
 import { Mono } from '../components/primitives/Mono';
 import { useDashboardStore } from '../store/dashboardStore';
-import { useLiveQueue } from '../hooks/useLiveQueue';
+import { useLiveQueue, QUEUE_STATUS } from '../hooks/useLiveQueue';
 import { getLiveDJ } from '../lib/djData';
 
 function greeting() {
@@ -140,12 +140,15 @@ export function Overview() {
           live
           right={<EqBars bars={6} color="var(--accent)" h={16} w={2.5} gap={2.5} />}
         />
+        {queue.length === 0 && (
+          <div style={{ padding: '20px 22px' }}>
+            <Mono style={{ color: 'var(--muted)' }}>NO ACTIVE CAMPAIGN — ONBOARD A DJ TO START</Mono>
+          </div>
+        )}
         {queue.map((v, i) => {
-          const active = v.status === 'dialing' || v.status === 'connected';
-          const label = v.status === 'dialing' ? 'DIALING'
-            : v.status === 'connected' ? 'ON CALL'
-            : v.status === 'voicemail' ? 'VOICEMAIL'
-            : 'QUEUED';
+          const meta = QUEUE_STATUS[v.status];
+          const active = v.status === 'dialing';
+          const label = meta.label;
 
           return (
             <div
@@ -163,11 +166,11 @@ export function Overview() {
               </div>
               <span style={{
                 padding: '5px 11px', borderRadius: 999,
-                background: active ? 'var(--accent-soft)' : 'var(--inset)',
+                background: meta.accent ? 'var(--accent-soft)' : 'var(--inset)',
                 display: 'inline-flex', alignItems: 'center', gap: 6,
               }}>
                 {active && <LiveDot size={6} />}
-                <Mono style={{ color: active ? 'var(--accent)' : 'var(--muted)', fontWeight: 600 }}>
+                <Mono style={{ color: meta.accent ? 'var(--accent)' : 'var(--muted)', fontWeight: 600 }}>
                   {label}
                 </Mono>
               </span>

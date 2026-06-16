@@ -5,7 +5,7 @@ import { Mono } from '../../components/primitives/Mono';
 import { callsClient } from '../../lib/callsClient';
 import type { SoundcheckData } from '../../types/soundcheck';
 
-type CallStatus = 'queued' | 'dialing' | 'connected' | 'voicemail' | 'hold' | 'nonumber';
+type CallStatus = 'dialing' | 'hold' | 'booked' | 'voicemail' | 'declined' | 'no_answer' | 'wrong_number' | 'nonumber';
 
 interface Props {
   data: SoundcheckData;
@@ -14,18 +14,15 @@ interface Props {
 
 interface VenueRow { name: string; city: string; dialable: boolean; }
 
-// Only dialable venues cycle through call states; venues without a number stay put.
-const FLOW: Record<CallStatus, CallStatus> = {
-  queued: 'dialing', dialing: 'connected', connected: 'voicemail', voicemail: 'queued', hold: 'queued', nonumber: 'nonumber',
-};
-
 const STATUS_STYLE: Record<CallStatus, { c: string; bg: string; label: string }> = {
-  queued:    { c: 'var(--muted)',  bg: 'var(--inset)',          label: 'QUEUED'           },
-  dialing:   { c: 'var(--accent)', bg: 'var(--accent-soft)',    label: 'DIALING'          },
-  connected: { c: '#3FBF7F',       bg: 'rgba(63,191,127,0.14)', label: 'ON CALL'          },
-  hold:      { c: 'var(--accent)', bg: 'var(--accent-soft)',    label: 'HOLD · NEEDS YOU' },
-  voicemail: { c: 'var(--muted)',  bg: 'var(--inset)',          label: 'VOICEMAIL'        },
-  nonumber:  { c: 'var(--faint)',  bg: 'var(--inset)',          label: 'NUMBER NOT SET UP'},
+  dialing:      { c: 'var(--accent)', bg: 'var(--accent-soft)',    label: 'DIALING'           },
+  hold:         { c: 'var(--accent)', bg: 'var(--accent-soft)',    label: 'HOLD · NEEDS YOU'  },
+  booked:       { c: '#3FBF7F',       bg: 'rgba(63,191,127,0.14)', label: 'BOOKED'            },
+  voicemail:    { c: 'var(--muted)',  bg: 'var(--inset)',          label: 'VOICEMAIL'         },
+  declined:     { c: 'var(--muted)',  bg: 'var(--inset)',          label: 'DECLINED'          },
+  no_answer:    { c: 'var(--muted)',  bg: 'var(--inset)',          label: 'NO ANSWER'         },
+  wrong_number: { c: 'var(--muted)',  bg: 'var(--inset)',          label: 'WRONG NUMBER'      },
+  nonumber:     { c: 'var(--faint)',  bg: 'var(--inset)',          label: 'NUMBER NOT SET UP' },
 };
 
 export function LaunchScreen({ data, onBack }: Props) {
@@ -46,7 +43,9 @@ export function LaunchScreen({ data, onBack }: Props) {
         dialable: !!(v.contact_phone && String(v.contact_phone).trim()),
       }));
       setVenueList(list);
-      setStatuses(list.map((v) => (v.dialable ? 'queued' : 'nonumber') as CallStatus));
+      // dialable venues start "dialing"; once a real call log lands for the
+      // venue, polling below swaps in its actual outcome.
+      setStatuses(list.map((v) => (v.dialable ? 'dialing' : 'nonumber') as CallStatus));
     });
   }, []);
 
@@ -58,22 +57,29 @@ export function LaunchScreen({ data, onBack }: Props) {
     return () => clearInterval(iv);
   }, [venueList.length, matched]);
 
-  // Cycle call statuses — only for dialable venues
+  // Reflect REAL call status: poll /calls and map each dialable venue to its
+  // logged outcome (hold/voicemail/declined/...). Until a call log exists for a
+  // venue it stays "dialing". Non-dialable venues stay "number not set up".
   useEffect(() => {
-    const iv = setInterval(() => {
-      setStatuses((prev) => {
-        const dialable = prev.map((s, i) => (s !== 'nonumber' ? i : -1)).filter((i) => i >= 0);
-        if (dialable.length === 0) return prev;
-        const next = [...prev];
-        const pick = dialable[Math.floor(Math.random() * dialable.length)];
-        next[pick] = FLOW[next[pick]];
-        return next;
-      });
-    }, 900);
-    return () => clearInterval(iv);
-  }, [venueList.length]);
+    if (venueList.length === 0) return;
+    let cancelled = false;
+    const poll = async () => {
+      const calls = await callsClient.listCalls();
+      const outcomeByVenue = new Map<string, CallStatus>();
+      for (const c of calls) {
+        if (c.venue) outcomeByVenue.set(c.venue, c.outcome as CallStatus);
+      }
+      if (cancelled) return;
+      setStatuses(venueList.map((v) =>
+        !v.dialable ? 'nonumber' : (outcomeByVenue.get(v.name) ?? 'dialing')
+      ));
+    };
+    poll();
+    const iv = setInterval(poll, 3000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [venueList]);
 
-  const inFlight = statuses.filter((s) => s === 'dialing' || s === 'connected').length;
+  const inFlight = statuses.filter((s) => s === 'dialing').length;
   const holds    = statuses.filter((s) => s === 'hold').length;
 
   return (
@@ -123,7 +129,7 @@ export function LaunchScreen({ data, onBack }: Props) {
           )}
           {venueList.map((v, i) => {
             const s = STATUS_STYLE[statuses[i] ?? 'queued'];
-            const active = statuses[i] === 'dialing' || statuses[i] === 'connected';
+            const active = statuses[i] === 'dialing' || statuses[i] === 'hold';
             return (
               <div key={i} style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 14, borderBottom: i < venueList.length - 1 ? '1px solid var(--line2)' : 'none' }}>
                 <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--inset)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 34px' }}>
